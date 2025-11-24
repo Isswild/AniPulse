@@ -1,0 +1,187 @@
+/* Root container */
+#root {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+  /* remove text-align: center so pages can control their own alignment */
+}
+
+/* Generic card padding used across the app */
+.card {
+  padding: 2em;
+}
+
+/* ===== FAN ART PAGE ===== */
+
+/* Upload panel */
+.fanart-upload {
+  padding: 1.25rem;
+  margin: 1.5rem 0;
+  border-radius: 12px;
+  background: #1e293b;
+  border: 1px solid #334155;
+}
+
+.fanart-upload h3 {
+  margin-bottom: 1rem;
+}
+
+/* Form fields inside upload card */
+.fanart-upload input,
+.fanart-upload textarea,
+.fanart-upload select {
+  width: 100%;
+  margin-top: 0.35rem;
+  margin-bottom: 0.75rem;
+  padding: 0.6rem 0.75rem;
+  background: #0f172a;
+  border: 1px solid #1e293b;
+  border-radius: 8px;
+  color: #e2e8f0;
+}
+
+.fanart-upload button {
+  background: #2563eb;
+  color: white;
+  padding: 0.7rem 1.2rem;
+  border-radius: 10px;
+  font-weight: 600;
+  border: none;
+  margin-top: 0.5rem;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.fanart-upload button:hover {
+  background: #1d4ed8;
+}
+
+/* Tabs (My Fan Art / Community Gallery) */
+.tabs {
+  margin-top: 1rem;
+  margin-bottom: 1.25rem;
+  display: flex;
+  gap: 0.75rem;
+}
+
+.tabs button {
+  padding: 0.5rem 1rem;
+  border-radius: 30px;
+  background: #1e293b;
+  border: 1px solid #334155;
+  color: #cbd5e1;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.tabs .tab-active {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: white;
+}
+
+/* Fan art page alignment (override Vite’s original center) */
+.fanart-page {
+  text-align: left;
+}
+
+/* Make labels stack nicely */
+.fanart-upload label {
+  display: block;
+  font-size: 0.9rem;
+}
+
+/* Two-column row for title+anime and file+button */
+.fanart-form-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+  margin-bottom: 0.9rem;
+}
+
+/* Full-width row for description */
+.fanart-field-full {
+  margin-bottom: 0.9rem;
+}
+
+/* File input tweaks */
+.fanart-file-field input[type="file"] {
+  margin-top: 0.35rem;
+}
+
+/* Button sits nicely on the right column */
+.fanart-submit-wrap {
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-start;
+}
+
+/* ===== FAN ART CARDS ===== */
+
+.fanart-card {
+  background: #0f172a;
+  border: 1px solid #1e293b;
+  padding: 0.75rem;
+  border-radius: 12px;
+}
+
+.fanart-card h4 {
+  margin: 0.25rem 0;
+  font-size: 1.05rem;
+}
+
+.fanart-description {
+  font-size: 0.85rem;
+  color: #94a3b8;
+  margin: 0.4rem 0;
+}
+
+.fanart-card p.muted {
+  margin: 0;
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+/* Delete button under each card (My Fan Art tab) */
+.fanart-delete-btn {
+  margin-top: 0.6rem;
+  background: #b91c1c;
+  color: #f9fafb;
+  border: none;
+  border-radius: 8px;
+  padding: 0.35rem 0.8rem;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.fanart-delete-btn:hover {
+  background: #dc2626;
+}
+
+/* ===== OVERRIDES JUST FOR FAN ART GRID ===== */
+
+/* The gallery container on the page uses className="card-grid fanart-grid" */
+.card-grid.fanart-grid {
+  margin-top: 1rem;
+  display: flex;              /* override any .card-grid CSS elsewhere */
+  flex-wrap: wrap;
+  justify-content: center;    /* center cards */
+  gap: 1.5rem;
+}
+
+/* Fixed-size cards inside the fan art gallery */
+.card-grid.fanart-grid .fanart-card {
+  width: 320px;               /* fixed-size cards */
+  max-width: 100%;
+  margin: 0;                  /* flex handles spacing */
+}
+
+/* Thumbnail size */
+.card-grid.fanart-grid .fanart-card img {
+  width: 100%;
+  height: 220px;              /* consistent thumbnail height */
+  object-fit: cover;          /* crop nicely */
+  border-radius: 8px;
+  margin-bottom: 0.6rem;
+}

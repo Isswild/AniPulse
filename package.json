@@ -1,0 +1,20 @@
+{
+  "name": "anipulse-root",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"npm run dev --prefix anipulse\" \"npm run dev --prefix client\"",
+    "backend": "npm run dev --prefix anipulse",
+    "frontend": "npm run dev --prefix client"
+  },
+  "devDependencies": {
+    "concurrently": "^9.0.0"
+  },
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "cors": "^2.8.5",
+    "express-validator": "^7.3.1",
+    "jsonwebtoken": "^9.0.2",
+    "react-router-dom": "^7.9.6"
+  }
+}

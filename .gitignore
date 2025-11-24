@@ -1,0 +1,13 @@
+node_modules/
+client/node_modules/
+dist/
+.vite/
+.DS_Store
+.env
+
+# User uploads
+anipulse/uploads/
+
+# Large public images
+client/public/login-bg-*.jpg
+client/public/login-bg-*.png
