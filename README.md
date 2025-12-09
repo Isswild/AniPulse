@@ -28,6 +28,6 @@ Go into the /client folder, run npm install, and create a .env file with VITE_AP
 Database:
 Make sure your Neon PostgreSQL database has the required tables by running the provided SQL schema. Update DATABASE_URL in Railway or locally so your backend can connect properly.
 
-Link to Live Web AniPulse: [meticulous-tranquility-production-7405.up.railway.app]
+Link to Live Web AniPulse: [[meticulous-tranquility-production-7405.up.railway.app](https://meticulous-tranquility-production-7405.up.railway.app)]
 
 Link to AniPulse Video [https://uncg-my.sharepoint.com/:v:/g/personal/jhwilds_uncg_edu/IQCDthM9oYlXQol69vBKxC2ZAfmYyOsfcFM6rLoVlL8PCQk?e=KTVZS1]
