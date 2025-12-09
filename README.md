@@ -17,4 +17,12 @@ I learned how full-stack systems communicate, how to structure a backend API, an
 Future Work:
 With more time, I would add user profiles, better anime filtering, and real-time chat for discussions. I’d also like to improve the styling, add notifications, and integrate an external anime API for richer data. A future mobile version using React Native is another possible upgrade.
 
+Quick Setup Instructions
+Backend:
+Go into the /anipulse folder, run npm install, then create a .env file with your DATABASE_URL and JWT_SECRET. Start the backend using npm start (default port: 8080).
+Frontend:
+Go into the /client folder, run npm install, and create a .env file with VITE_API_BASE_URL pointing to your backend. Start the frontend using npm run dev (default port: 5173).
+Database:
+Make sure your Neon PostgreSQL database has the required tables by running the provided SQL schema. Update DATABASE_URL in Railway or locally so your backend can connect properly.
+
 Link to AniPulse Video [https://uncg-my.sharepoint.com/:v:/g/personal/jhwilds_uncg_edu/IQCDthM9oYlXQol69vBKxC2ZAfmYyOsfcFM6rLoVlL8PCQk?e=KTVZS1]
