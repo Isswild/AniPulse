@@ -3,9 +3,8 @@ import express from "express";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { body, validationResult } from "express-validator";
-import { PrismaClient } from "@prisma/client";
+import pool from "../db.js"; // <-- use your Neon pool
 
-const prisma = new PrismaClient();
 const router = express.Router();
 
 const JWT_SECRET = process.env.JWT_SECRET || "super-secret-change-me";
@@ -21,37 +20,64 @@ router.post(
   async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ message: "Invalid input", errors: errors.array() });
+      return res
+        .status(400)
+        .json({ message: "Invalid input", errors: errors.array() });
     }
 
-    const { username, email, password } = req.body;
+    const { username, email, password, role } = req.body;
 
     try {
-      const existing = await prisma.user.findFirst({
-        where: { OR: [{ username }, { email }] },
-      });
-      if (existing) {
-        return res.status(409).json({ message: "Username or email already taken" });
+      // Check if username or email already exists
+      const existing = await pool.query(
+        `SELECT id FROM users WHERE username = $1 OR email = $2 LIMIT 1`,
+        [username, email]
+      );
+
+      if (existing.rows.length > 0) {
+        return res
+          .status(409)
+          .json({ message: "Username or email already taken" });
       }
 
       const passwordHash = await bcrypt.hash(password, 10);
 
-      const user = await prisma.user.create({
-        data: { username, email, passwordHash, role: "viewer" },
-      });
+      const result = await pool.query(
+        `INSERT INTO users (username, email, password_hash, role)
+         VALUES ($1, $2, $3, COALESCE($4, 'viewer'))
+         RETURNING id, username, email, role, created_at`,
+        [username, email, passwordHash, role]
+      );
+
+      const user = result.rows[0];
 
       const token = jwt.sign(
-        { userId: user.id, role: user.role },
+        {
+          userId: user.id,
+          username: user.username,
+          role: user.role,
+        },
         JWT_SECRET,
         { expiresIn: "7d" }
       );
 
-      res.json({
-        user: { id: user.id, name: user.username, role: user.role },
+      res.status(201).json({
+        user: {
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          role: user.role,
+        },
         token,
       });
     } catch (err) {
-      console.error(err);
+      console.error("AniPulse: error registering user:", err);
+      if (err.code === "23505") {
+        // unique constraint from Postgres
+        return res
+          .status(409)
+          .json({ message: "Username or email already taken" });
+      }
       res.status(500).json({ message: "Server error" });
     }
   }
@@ -62,34 +88,60 @@ router.post(
   "/login",
   [body("username").notEmpty(), body("password").notEmpty()],
   async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res
+        .status(400)
+        .json({ message: "Invalid input", errors: errors.array() });
+    }
+
     const { username, password } = req.body;
 
     try {
-      const user = await prisma.user.findFirst({
-        where: { username },
-      });
+      const result = await pool.query(
+        `SELECT id, username, email, password_hash, role
+         FROM users
+         WHERE username = $1
+         LIMIT 1`,
+        [username]
+      );
 
-      if (!user) {
-        return res.status(401).json({ message: "Invalid username or password" });
+      if (result.rows.length === 0) {
+        return res
+          .status(401)
+          .json({ message: "Invalid username or password" });
       }
 
-      const ok = await bcrypt.compare(password, user.passwordHash);
+      const user = result.rows[0];
+
+      const ok = await bcrypt.compare(password, user.password_hash);
       if (!ok) {
-        return res.status(401).json({ message: "Invalid username or password" });
+        return res
+          .status(401)
+          .json({ message: "Invalid username or password" });
       }
 
       const token = jwt.sign(
-        { userId: user.id, role: user.role },
+        {
+          userId: user.id,
+          username: user.username,
+          role: user.role,
+        },
         JWT_SECRET,
         { expiresIn: "7d" }
       );
 
       res.json({
-        user: { id: user.id, name: user.username, role: user.role },
+        user: {
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          role: user.role,
+        },
         token,
       });
     } catch (err) {
-      console.error(err);
+      console.error("AniPulse: error logging in:", err);
       res.status(500).json({ message: "Server error" });
     }
   }

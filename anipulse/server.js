@@ -1,16 +1,16 @@
 // server.js
 // AniPulse API - built by James Wilds III
 
-import express from 'express';
-import cors from 'cors';
-import dotenv from 'dotenv';
-import pool from './db.js';
-import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
-import multer from 'multer';
-import path from 'path';
-import fs from 'fs';
-import { fileURLToPath } from 'url';
+import express from "express";
+import cors from "cors";
+import dotenv from "dotenv";
+import pool from "./db.js";             // still using Neon via pg pool
+import jwt from "jsonwebtoken";         // still needed for auth middleware
+import multer from "multer";
+import path from "path";
+import fs from "fs";
+import { fileURLToPath } from "url";
+import authRouter from "./routes/auth.js"; // ✅ NEW: Prisma auth routes
 
 dotenv.config();
 
@@ -19,7 +19,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // make sure uploads folder exists
-const uploadsDir = path.join(__dirname, 'uploads');
+const uploadsDir = path.join(__dirname, "uploads");
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir);
 }
@@ -32,10 +32,10 @@ app.use(cors());
 app.use(express.json());
 
 // serve uploaded images statically
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // use a real secret in .env: JWT_SECRET=some-long-random-string
-const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-change-this';
+const JWT_SECRET = process.env.JWT_SECRET || "super-secret-change-this";
 
 // ============= MULTER SETUP =============
 // store files in /uploads and give them unique names
@@ -44,9 +44,9 @@ const storage = multer.diskStorage({
     cb(null, uploadsDir);
   },
   filename: (req, file, cb) => {
-    const unique = Date.now() + '-' + file.originalname;
+    const unique = Date.now() + "-" + file.originalname;
     cb(null, unique);
-  }
+  },
 });
 const upload = multer({ storage });
 
@@ -54,140 +54,41 @@ const upload = multer({ storage });
 function requireAuth(req, res, next) {
   const authHeader = req.headers.authorization;
   if (!authHeader) {
-    return res.status(401).json({ error: 'No token provided' });
+    return res.status(401).json({ error: "No token provided" });
   }
-  const token = authHeader.split(' ')[1];
+  const token = authHeader.split(" ")[1];
   try {
     const payload = jwt.verify(token, JWT_SECRET);
     // payload = { userId, username, role, iat, exp }
     req.user = payload;
     next();
   } catch (err) {
-    return res.status(401).json({ error: 'Invalid or expired token' });
+    return res.status(401).json({ error: "Invalid or expired token" });
   }
 }
 
 function requireAdmin(req, res, next) {
-  if (!req.user || req.user.role !== 'admin') {
-    return res.status(403).json({ error: 'Admins only' });
+  if (!req.user || req.user.role !== "admin") {
+    return res.status(403).json({ error: "Admins only" });
   }
   next();
 }
 
 // ============= ROOT ROUTE =============
-app.get('/', (req, res) => {
+app.get("/", (req, res) => {
   res.json({
-    app: 'AniPulse API',
-    author: 'James Wilds III',
-    message: 'Welcome to AniPulse — anime, discussions, fan art, quizzes.'
+    app: "AniPulse API",
+    author: "James Wilds III",
+    message: "Welcome to AniPulse — anime, discussions, fan art, quizzes.",
   });
 });
 
-// ============= AUTH ROUTES =============
-
-// ============= AUTH ROUTES =============
-
-// Register new user
-app.post('/api/auth/register', async (req, res) => {
-  const { username, email, password, role } = req.body;
-
-  if (!username || !email || !password) {
-    return res.status(400).json({ error: 'username, email, and password are required' });
-  }
-
-  try {
-    const passwordHash = await bcrypt.hash(password, 10);
-
-    const result = await pool.query(
-      `INSERT INTO users (username, email, password_hash, role)
-       VALUES ($1, $2, $3, COALESCE($4, 'viewer'))
-       RETURNING id, username, email, role, created_at`,
-      [username, email, passwordHash, role]
-    );
-
-    const user = result.rows[0];
-
-    const token = jwt.sign(
-      { userId: user.id, username: user.username, role: user.role },
-      JWT_SECRET,
-      { expiresIn: '7d' }
-    );
-
-    res.status(201).json({
-      token,
-      user: {
-        id: user.id,
-        username: user.username,
-        email: user.email,
-        role: user.role,
-      },
-    });
-  } catch (err) {
-    console.error('AniPulse: error registering user:', err);
-
-    // handle unique constraint from Postgres (Neon)
-    if (err.code === '23505') {
-      return res.status(409).json({ error: 'Username or email already in use' });
-    }
-
-    res.status(500).json({ error: 'Could not register user' });
-  }
-});
-
-
-// Login
-app.post('/api/auth/login', async (req, res) => {
-  const { username, email, password } = req.body;
-
-  if (!password || (!username && !email)) {
-    return res.status(400).json({ error: 'username or email and password are required' });
-  }
-
-  try {
-    const result = await pool.query(
-      `SELECT id, username, email, password_hash, role
-       FROM users
-       WHERE ($1::text IS NOT NULL AND username = $1)
-          OR ($2::text IS NOT NULL AND email = $2)
-       LIMIT 1`,
-      [username || null, email || null]
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(400).json({ error: 'Invalid credentials' });
-    }
-
-    const user = result.rows[0];
-
-    const match = await bcrypt.compare(password, user.password_hash);
-    if (!match) {
-      return res.status(400).json({ error: 'Invalid credentials' });
-    }
-
-    const token = jwt.sign(
-      { userId: user.id, username: user.username, role: user.role },
-      JWT_SECRET,
-      { expiresIn: '7d' } // a bit longer for dev
-    );
-
-    res.json({
-      token,
-      user: {
-        id: user.id,
-        username: user.username,
-        email: user.email,
-        role: user.role,
-      },
-    });
-  } catch (err) {
-    console.error('AniPulse: error logging in:', err);
-    res.status(500).json({ error: 'Could not log in' });
-  }
-});
-
+// ============= AUTH ROUTES (via Prisma router) =============
+// ✅ This now handles: POST /api/auth/register and POST /api/auth/login
+app.use("/api/auth", authRouter);
 
 // ============= USERS (public list) =============
-app.get('/api/users', async (req, res) => {
+app.get("/api/users", async (req, res) => {
   try {
     const result = await pool.query(
       `SELECT id, username, email, avatar_url, bio, role, created_at
@@ -196,28 +97,28 @@ app.get('/api/users', async (req, res) => {
     );
     res.json(result.rows);
   } catch (err) {
-    console.error('AniPulse: error fetching users:', err);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error("AniPulse: error fetching users:", err);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
 // ============= CATEGORIES =============
-app.get('/api/categories', async (req, res) => {
+app.get("/api/categories", async (req, res) => {
   try {
     const result = await pool.query(
-      'SELECT id, name FROM discussion_categories ORDER BY name'
+      "SELECT id, name FROM discussion_categories ORDER BY name"
     );
     res.json(result.rows);
   } catch (err) {
-    console.error('AniPulse: error fetching categories:', err);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error("AniPulse: error fetching categories:", err);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
 // ============= DISCUSSION =============
 
 // Get discussion threads
-app.get('/api/threads', async (req, res) => {
+app.get("/api/threads", async (req, res) => {
   try {
     const result = await pool.query(
       `SELECT t.id,
@@ -233,13 +134,13 @@ app.get('/api/threads', async (req, res) => {
     );
     res.json(result.rows);
   } catch (err) {
-    console.error('AniPulse: error fetching threads:', err);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error("AniPulse: error fetching threads:", err);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
 // Create a discussion thread (protected)
-app.post('/api/threads', requireAuth, async (req, res) => {
+app.post("/api/threads", requireAuth, async (req, res) => {
   const { category_id, title, body } = req.body;
   const user_id = req.user.userId; // from token
   try {
@@ -251,15 +152,15 @@ app.post('/api/threads', requireAuth, async (req, res) => {
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
-    console.error('AniPulse: error creating thread:', err);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error("AniPulse: error creating thread:", err);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
 // ============= ANIME LIST =============
 
 // Get anime entries (public)
-app.get('/api/anime', async (req, res) => {
+app.get("/api/anime", async (req, res) => {
   try {
     const result = await pool.query(
       `SELECT id,
@@ -275,13 +176,13 @@ app.get('/api/anime', async (req, res) => {
     );
     res.json(result.rows);
   } catch (err) {
-    console.error('AniPulse: error fetching anime:', err);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error("AniPulse: error fetching anime:", err);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
 // Get single anime (for detail view)
-app.get('/api/anime/:id', async (req, res) => {
+app.get("/api/anime/:id", async (req, res) => {
   const { id } = req.params;
   try {
     const result = await pool.query(
@@ -298,21 +199,21 @@ app.get('/api/anime/:id', async (req, res) => {
       [id]
     );
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Anime not found' });
+      return res.status(404).json({ error: "Anime not found" });
     }
     res.json(result.rows[0]);
   } catch (err) {
-    console.error('AniPulse: error fetching anime by id:', err);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error("AniPulse: error fetching anime by id:", err);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
 // Create anime (ADMIN ONLY) — supports file upload OR URL
 app.post(
-  '/api/anime',
+  "/api/anime",
   requireAuth,
   requireAdmin,
-  upload.single('image'),
+  upload.single("image"),
   async (req, res) => {
     const {
       title,
@@ -321,11 +222,11 @@ app.post(
       season,
       streaming_url,
       drop_date,
-      extra_notes
+      extra_notes,
     } = req.body;
 
     if (!title) {
-      return res.status(400).json({ error: 'Title is required' });
+      return res.status(400).json({ error: "Title is required" });
     }
 
     // prefer uploaded file, otherwise use URL from body
@@ -356,19 +257,19 @@ app.post(
           season || null,
           streaming_url || null,
           drop_date || null,
-          extra_notes || null
+          extra_notes || null,
         ]
       );
       res.status(201).json(result.rows[0]);
     } catch (err) {
-      console.error('AniPulse: error creating anime:', err);
-      res.status(500).json({ error: 'Could not create anime' });
+      console.error("AniPulse: error creating anime:", err);
+      res.status(500).json({ error: "Could not create anime" });
     }
   }
 );
 
 // Update extra anime info (ADMIN ONLY)
-app.put('/api/anime/:id', requireAuth, requireAdmin, async (req, res) => {
+app.put("/api/anime/:id", requireAuth, requireAdmin, async (req, res) => {
   const { id } = req.params;
   const { streaming_url, drop_date, extra_notes } = req.body;
 
@@ -391,39 +292,33 @@ app.put('/api/anime/:id', requireAuth, requireAdmin, async (req, res) => {
     );
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Anime not found' });
+      return res.status(404).json({ error: "Anime not found" });
     }
 
     res.json(result.rows[0]);
   } catch (err) {
-    console.error('AniPulse: error updating anime:', err);
-    res.status(500).json({ error: 'Could not update anime' });
+    console.error("AniPulse: error updating anime:", err);
+    res.status(500).json({ error: "Could not update anime" });
   }
 });
 
 // Delete anime (ADMIN ONLY)
-app.delete('/api/anime/:id', requireAuth, requireAdmin, async (req, res) => {
+app.delete("/api/anime/:id", requireAuth, requireAdmin, async (req, res) => {
   const { id } = req.params;
   try {
-    await pool.query('DELETE FROM anime WHERE id = $1', [id]);
+    await pool.query("DELETE FROM anime WHERE id = $1", [id]);
     res.json({ success: true });
   } catch (err) {
-    console.error('AniPulse: error deleting anime:', err);
-    res.status(500).json({ error: 'Could not delete anime' });
+    console.error("AniPulse: error deleting anime:", err);
+    res.status(500).json({ error: "Could not delete anime" });
   }
 });
 
 // Favorite anime (any logged-in user)
-app.post('/api/anime/:id/favorite', requireAuth, async (req, res) => {
+app.post("/api/anime/:id/favorite", requireAuth, async (req, res) => {
   const { id } = req.params;
   const userId = req.user.userId;
   try {
-    // make sure this table exists in Neon:
-    // CREATE TABLE IF NOT EXISTS anime_favorites (
-    //   user_id INT NOT NULL,
-    //   anime_id INT NOT NULL,
-    //   PRIMARY KEY (user_id, anime_id)
-    // );
     await pool.query(
       `INSERT INTO anime_favorites (user_id, anime_id)
        VALUES ($1, $2)
@@ -432,13 +327,13 @@ app.post('/api/anime/:id/favorite', requireAuth, async (req, res) => {
     );
     res.json({ success: true });
   } catch (err) {
-    console.error('AniPulse: error favoriting anime:', err);
-    res.status(500).json({ error: 'Could not favorite anime' });
+    console.error("AniPulse: error favoriting anime:", err);
+    res.status(500).json({ error: "Could not favorite anime" });
   }
 });
 
 // Unfavorite anime (any logged-in user)
-app.delete('/api/anime/:id/favorite', requireAuth, async (req, res) => {
+app.delete("/api/anime/:id/favorite", requireAuth, async (req, res) => {
   const { id } = req.params;
   const userId = req.user.userId;
 
@@ -450,8 +345,8 @@ app.delete('/api/anime/:id/favorite', requireAuth, async (req, res) => {
     );
     res.json({ success: true });
   } catch (err) {
-    console.error('AniPulse: error unfavoriting anime:', err);
-    res.status(500).json({ error: 'Could not unfavorite anime' });
+    console.error("AniPulse: error unfavoriting anime:", err);
+    res.status(500).json({ error: "Could not unfavorite anime" });
   }
 });
 
@@ -546,7 +441,6 @@ app.delete("/api/fanart/:id", requireAuth, async (req, res) => {
   }
 });
 
-
 // Get all fan art (community gallery)
 app.get("/api/fanart", async (req, res) => {
   try {
@@ -573,7 +467,7 @@ app.get("/api/fanart", async (req, res) => {
 });
 
 // Get all favorites for the logged-in user
-app.get('/api/favorites', requireAuth, async (req, res) => {
+app.get("/api/favorites", requireAuth, async (req, res) => {
   const userId = req.user.userId;
   try {
     const result = await pool.query(
@@ -590,8 +484,8 @@ app.get('/api/favorites', requireAuth, async (req, res) => {
     );
     res.json(result.rows);
   } catch (err) {
-    console.error('AniPulse: error fetching favorites:', err);
-    res.status(500).json({ error: 'Could not fetch favorites' });
+    console.error("AniPulse: error fetching favorites:", err);
+    res.status(500).json({ error: "Could not fetch favorites" });
   }
 });
 

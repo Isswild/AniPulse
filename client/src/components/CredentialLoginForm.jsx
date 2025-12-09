@@ -1,52 +1,60 @@
 // src/components/CredentialLoginForm.jsx
 import { useState } from "react";
 
-// You can set this in your Vite env: VITE_API_BASE_URL=http://localhost:8080
-const API_BASE = import.meta.env?.VITE_API_BASE_URL || "http://localhost:8080";
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
 
-export default function CredentialLoginForm({ mode, onAuth, onBack }) {
+export default function CredentialLoginForm({ mode, onBack, onAuth }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState(null);
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const roleLabel = mode === "admin" ? "Admin" : "Viewer";
+  const isAdmin = mode === "admin";
+
+  const title = isAdmin ? "Admin login" : "Viewer login";
+  const subtitle = isAdmin
+    ? "Enter your admin credentials to manage AniPulse content."
+    : "Enter your viewer credentials to continue where you left off.";
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError(null);
-    setLoading(true);
+    setError("");
+
+    if (!username || !password) {
+      setError("Please enter both username and password.");
+      return;
+    }
 
     try {
-      const res = await fetch(`${API_BASE}/api/auth/login`, {
+      setLoading(true);
+      const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        // backend supports username OR email — we're using username here
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password }),
       });
 
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error || "Login failed");
+        // backend sends { message: "..."} or { error: "..." }
+        setError(data.message || data.error || "Login failed.");
         return;
       }
 
-      // data = { token, user: { id, username, email, role } }
-
-      // if they clicked "Admin" but this user isn't admin
-      if (mode === "admin" && data.user.role !== "admin") {
-        setError("This account is not an admin account.");
-        return;
-      }
-
-      // ✅ hand off to App.jsx (it expects { user, token })
-      onAuth(data);
+      // data should be { user, token }
+      onAuth?.({
+        user: {
+          id: data.user.id,
+          name: data.user.username,
+          role: data.user.role,
+          email: data.user.email,
+        },
+        token: data.token,
+      });
     } catch (err) {
-      console.error("AniPulse: login error:", err);
-      setError("Server error. Please try again.");
+      console.error("Login error:", err);
+      setError("Could not reach the server. Check if API is running.");
     } finally {
       setLoading(false);
     }
@@ -56,43 +64,63 @@ export default function CredentialLoginForm({ mode, onAuth, onBack }) {
     <div className="login-page">
       <div className="login-overlay">
         <div className="login-screen">
-          <div className="login-card">
-            <button className="back-btn" onClick={onBack}>
+          <div className="auth-card">
+            <button
+              type="button"
+              className="auth-back-btn"
+              onClick={onBack}
+            >
               ← Back
             </button>
 
-            <h2 className="login-title">{roleLabel} login</h2>
-            <p className="login-caption">
-              Enter your username and password to continue.
-            </p>
+            <h1 className="auth-title">{title}</h1>
+            <p className="auth-subtitle">{subtitle}</p>
 
-            <form className="login-form" onSubmit={handleSubmit}>
-              <label>
-                Username
+            <form onSubmit={handleSubmit}>
+              <div className="auth-input-group">
+                <label className="auth-input-label" htmlFor="username">
+                  Username
+                </label>
                 <input
+                  id="username"
+                  className="auth-input"
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  required
                 />
-              </label>
+              </div>
 
-              <label>
-                Password
+              <div className="auth-input-group">
+                <label className="auth-input-label" htmlFor="password">
+                  Password
+                </label>
                 <input
+                  id="password"
+                  className="auth-input"
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  required
                 />
-              </label>
+              </div>
 
-              {error && <p className="error-text">{error}</p>}
+              {error && (
+                <p
+                  style={{
+                    marginTop: "0.5rem",
+                    fontSize: "0.85rem",
+                    color: "#fca5a5",
+                  }}
+                >
+                  {error}
+                </p>
+              )}
 
-              <button type="submit" className="primary-btn" disabled={loading}>
+              <button type="submit" className="auth-button" disabled={loading}>
                 {loading
                   ? "Logging in..."
-                  : `Log in as ${roleLabel.toLowerCase()}`}
+                  : isAdmin
+                  ? "Log in as admin"
+                  : "Log in as viewer"}
               </button>
             </form>
           </div>
@@ -101,4 +129,3 @@ export default function CredentialLoginForm({ mode, onAuth, onBack }) {
     </div>
   );
 }
-

@@ -1,104 +1,86 @@
 // src/components/SignupForm.jsx
 import { useState } from "react";
 
-// Use Vite env if set: VITE_API_BASE_URL=http://localhost:8080
-const API_BASE = import.meta.env?.VITE_API_BASE_URL || "http://localhost:8080";
-
 export default function SignupForm({ onAuth, onBack }) {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const [error, setError] = useState(null);
-  const [loading, setLoading] = useState(false);
-
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    setError(null);
-    setLoading(true);
 
-    try {
-      const res = await fetch(`${API_BASE}/api/auth/register`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        // backend expects: { username, email, password, role? }
-        body: JSON.stringify({ username, email, password }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        // server sends { error: "..." }
-        setError(data.error || "Could not create account");
-        return;
-      }
-
-      // data = { token, user: { id, username, email, role } }
-      onAuth(data);
-    } catch (err) {
-      console.error("AniPulse: signup error:", err);
-      setError("Server error. Please try again.");
-    } finally {
-      setLoading(false);
-    }
+    // For now just fake auth like before
+    onAuth({
+      user: { name: username || "New AniPulse member", role: "viewer" },
+      token: "signup-demo-token",
+    });
   };
 
   return (
-    <div className="login-page">
-      <div className="login-overlay">
-        <div className="login-screen">
-          <div className="login-card">
-            <button className="back-btn" onClick={onBack}>
-              ← Back
-            </button>
+    <div className="login-screen">
+      <div className="auth-card">
+        <button type="button" className="auth-back-btn" onClick={onBack}>
+          ← Back
+        </button>
 
-            <h2 className="login-title">Create your AniPulse account</h2>
+        <h1 className="auth-title">Create your AniPulse account</h1>
+        <p className="auth-subtitle">
+          Save your favorites, fan art, and quiz results across sessions.
+        </p>
 
-            <form className="login-form" onSubmit={handleSubmit}>
-              <label>
-                Username
-                <input
-                  type="text"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  required
-                />
-              </label>
-
-              <label>
-                Email
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
-              </label>
-
-              <label>
-                Password
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
-              </label>
-
-              {error && <p className="error-text">{error}</p>}
-
-              <button
-                type="submit"
-                className="primary-btn"
-                disabled={loading}
-              >
-                {loading ? "Creating..." : "Create account"}
-              </button>
-            </form>
+        <form onSubmit={handleSubmit}>
+          <div className="auth-input-group">
+            <label
+              htmlFor="signup-username"
+              className="auth-input-label"
+            >
+              Username
+            </label>
+            <input
+              id="signup-username"
+              className="auth-input"
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              required
+            />
           </div>
-        </div>
+
+          <div className="auth-input-group">
+            <label htmlFor="signup-email" className="auth-input-label">
+              Email (optional)
+            </label>
+            <input
+              id="signup-email"
+              className="auth-input"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@example.com"
+            />
+          </div>
+
+          <div className="auth-input-group">
+            <label
+              htmlFor="signup-password"
+              className="auth-input-label"
+            >
+              Password
+            </label>
+            <input
+              id="signup-password"
+              className="auth-input"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </div>
+
+          <button type="submit" className="auth-button">
+            Create account
+          </button>
+        </form>
       </div>
     </div>
   );

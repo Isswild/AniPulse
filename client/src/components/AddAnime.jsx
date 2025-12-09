@@ -69,13 +69,7 @@ export default function AddAnime({ token, onAdded }) {
           required
         />
 
-        {/* optional URL */}
-        <input
-          name="cover_image_url"
-          value={form.cover_image_url}
-          onChange={handleChange}
-          placeholder="Image URL (optional if uploading)"
-        />
+        
 
         {/* THIS is the file selector you weren't seeing */}
         <input

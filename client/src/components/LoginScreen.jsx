@@ -23,6 +23,7 @@ export default function LoginScreen({ onSelectMode, onAuth }) {
       <div className="login-overlay">
         <div className="login-screen">
           <div className="login-card">
+            {/* Logo + text */}
             <div className="login-logo-wrap">
               <div className="login-logo-orb" />
               <div>
@@ -32,37 +33,66 @@ export default function LoginScreen({ onSelectMode, onAuth }) {
             </div>
 
             <p className="login-caption">
-              Step into a neon-soaked anime city. Track your favorites, share
-              fan art, join discussions, and find out which character you’re
+              Step into a immersive anime city. Track your favorites, share fan
+              art, join discussions, and find out which character you&apos;re
               most like.
             </p>
 
-            {/* 👉 Now just chooses a mode */}
-            <div className="login-options">
-              <button onClick={() => onSelectMode("viewer")}>
-                Continue as viewer
-              </button>
-              <button onClick={() => onSelectMode("admin")}>
-                Continue as admin
-              </button>
-              <button onClick={() => onSelectMode("signup")}>
-                Create account
-              </button>
+            {/* Big white option cards */}
+            <div className="login-actions">
               <button
+                type="button"
+                className="login-option-btn"
+                onClick={() => onSelectMode("viewer")}
+              >
+                <span className="login-option-main">Sign In</span>
+                <span className="login-option-sub">
+                  Log in with your account and pick up where you left off.
+                </span>
+              </button>
+
+              <button
+                type="button"
+                className="login-option-btn"
+                onClick={() => onSelectMode("admin")}
+              >
+                <span className="login-option-main">Admin Sign In</span>
+                <span className="login-option-sub">
+                  Manage the anime database, reviews, and site content.
+                </span>
+              </button>
+
+              <button
+                type="button"
+                className="login-option-btn"
+                onClick={() => onSelectMode("signup")}
+              >
+                <span className="login-option-main">Register</span>
+                <span className="login-option-sub">
+                  Make a free AniPulse account to save favorites and quiz results.
+                </span>
+              </button>
+
+              <button
+                type="button"
+                className="login-option-btn"
                 onClick={() =>
-                  onAuth({
+                  onAuth?.({
                     user: { name: "Guest", role: "guest" },
-                    token: null,
+                    token: "guest-mode",
                   })
                 }
               >
-                Continue as guest
+                <span className="login-option-main">Continue as guest</span>
+                <span className="login-option-sub">
+                  Explore AniPulse without saving anything.
+                  demos.
+                </span>
               </button>
             </div>
 
-            <p className="login-hint">
-              Background rotates between different anime city & character shots
-              each time you visit.
+            <p className="login-footnote">
+              AniPulse Created by James Wilds III
             </p>
           </div>
         </div>

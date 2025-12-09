@@ -116,31 +116,60 @@
   justify-content: flex-start;
 }
 
-/* ===== FAN ART CARDS ===== */
-
-.fanart-card {
-  background: #0f172a;
-  border: 1px solid #1e293b;
-  padding: 0.75rem;
-  border-radius: 12px;
+/* ===== FAN ART GRID ===== */
+.fanart-grid {
+  display: grid;
+  gap: 1.2rem;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  margin-top: 1rem;
 }
 
+/* ===== FAN ART CARDS (MATCHING ANIME CARDS) ===== */
+.fanart-card {
+  background: #1f2937;
+  padding: 0.75rem;
+  border-radius: 0.75rem;
+  border: 1px solid #334155;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+.fanart-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+/* Fan Art image */
+.fanart-card img {
+  width: 100%;
+  height: 240px;
+  border-radius: 0.5rem;
+  object-fit: cover;
+  margin-bottom: 0.75rem;
+}
+
+/* Title */
 .fanart-card h4 {
   margin: 0.25rem 0;
+  color: #e2e8f0;
   font-size: 1.05rem;
 }
 
+/* Description */
 .fanart-description {
   font-size: 0.85rem;
   color: #94a3b8;
   margin: 0.4rem 0;
 }
 
+/* Small muted text */
 .fanart-card p.muted {
   margin: 0;
   font-size: 0.75rem;
   color: #64748b;
 }
+
 
 /* Delete button under each card (My Fan Art tab) */
 .fanart-delete-btn {
@@ -184,4 +213,57 @@
   object-fit: cover;          /* crop nicely */
   border-radius: 8px;
   margin-bottom: 0.6rem;
+}
+
+.anime-quote-card {
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 0.75rem;
+  padding: 1rem 1.25rem;
+  margin-top: 1rem;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+}
+
+.anime-quote-title {
+  margin: 0 0 0.5rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.anime-quote-text {
+  font-size: 0.95rem;
+  margin: 0.5rem 0;
+  line-height: 1.4;
+}
+
+.anime-quote-meta {
+  font-size: 0.8rem;
+  opacity: 0.8;
+  margin-bottom: 0.75rem;
+}
+
+.anime-quote-error {
+  color: #f97373;
+  font-size: 0.85rem;
+}
+
+.anime-quote-btn {
+  padding: 0.4rem 0.9rem;
+  border-radius: 999px;
+  border: 1px solid #38bdf8;
+  background: transparent;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.anime-quote-btn:hover:not(:disabled) {
+  background: #0ea5e9;
+  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.4);
+  transform: translateY(-1px);
+}
+
+.anime-quote-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
 }
