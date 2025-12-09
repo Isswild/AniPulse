@@ -1,4 +1,4 @@
-📘 AniPulse – Full-Stack Anime Hub
+AniPulse – Full-Stack Anime Hub
 
 By James Wilds III
 
